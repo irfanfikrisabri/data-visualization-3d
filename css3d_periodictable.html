@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>three.js css3d - periodic table</title>
+		<script src="https://accounts.google.com/gsi/client" async defer></script>
+		<script src="https://apis.google.com/js/api.js"></script>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				margin: 0;
+				background-color: #000000;
+				color: #ffffff;
+				font-family: Monospace;
+				font-size: 13px;
+				line-height: 24px;
+				overscroll-behavior: none;
+			}
+
+			a {
+				color: #8ff;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px;
+				width: 100%;
+				padding: 10px;
+				box-sizing: border-box;
+				text-align: center;
+				-moz-user-select: none;
+				-webkit-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
+				pointer-events: none;
+				z-index: 1;
+			}
+
+			#menu {
+				position: absolute;
+				bottom: 20px;
+				width: 100%;
+				text-align: center;
+			}
+
+			/* Color Scale Indicator */
+			#color-scale-indicator {
+				position: absolute;
+				bottom: 20px;
+				right: 20px;
+				font-size: 11px;
+				z-index: 100;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.color-scale-container {
+				width: 100px;
+				height: 12px;
+				border-radius: 2px;
+				overflow: hidden;
+				border: 1px solid rgba(255, 255, 255, 0.2);
+			}
+
+			.color-scale-gradient {
+				width: 100%;
+				height: 100%;
+				background: linear-gradient(to right, #ef3022, #fdca35, #3a9f4b);
+			}
+
+			.scale-label {
+				font-size: 10px;
+				color: rgba(255, 255, 255, 0.85);
+				white-space: nowrap;
+			}
+
+			.element {
+				width: 140px;
+				height: 175px;
+				box-shadow: 0px 0px 12px rgba(0,255,255,0.5);
+				border: 1px solid rgba(127,255,255,0.25);
+				font-family: Helvetica, sans-serif;
+				text-align: center;
+				cursor: default;
+				display: flex;
+				flex-direction: column;
+				padding: 0;
+				position: relative;
+				overflow: hidden;
+				background: rgba(10, 10, 10, 0.9); /* Dark background */
+			}
+
+			.element:hover {
+				box-shadow: 0px 0px 12px rgba(0,255,255,0.75);
+				border: 1px solid rgba(127,255,255,0.75);
+			}
+
+			/* Color based on net worth */
+			.element.red-border {
+				border: 2px solid #ef3022;
+			}
+			
+			.element.orange-border {
+				border: 2px solid #fdca35;
+			}
+			
+			.element.green-border {
+				border: 2px solid #3a9f4b;
+			}
+			
+			.element.red-fill {
+				background: rgba(239, 48, 34, 0.2); 
+			}
+			
+			.element.orange-fill {
+				background: rgba(253, 203, 53, 0.2); 
+			}
+			
+			.element.green-fill {
+				background: rgba(58, 159, 75, 0.2); 
+			}
+
+			.element .corner-info {
+				position: absolute;
+				font-size: 9px;
+				color: rgba(255, 255, 255, 0.85);
+				padding: 4px;
+				text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+				z-index: 2;
+			}
+
+			.element .country {
+				top: 0;
+				left: 0;
+				text-align: left;
+			}
+
+			.element .age {
+				top: 0;
+				right: 0;
+				text-align: right;
+			}
+
+			.element .photo-container {
+				width: 100%;
+				height: 95px;
+				overflow: hidden;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				position: absolute;
+				top: 50%;
+				transform: translateY(-50%);
+			}
+
+			.element .photo {
+				width: 85%;
+				height: 100%;
+				object-fit: cover;
+			}
+
+			.element .name {
+				position: absolute;
+				bottom: 20px;
+				width: 100%;
+				font-size: 11px;
+				font-weight: bold;
+				color: white;
+				padding: 2px 4px;
+				text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+				line-height: 1.2;
+				text-align: center;
+				z-index: 2;
+			}
+
+			.element .interest {
+				position: absolute;
+				bottom: 0px;
+				width: 100%;
+				font-size: 9px;
+				color: rgba(255, 255, 255, 0.85);
+				padding: 2px 4px;
+				text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+				text-align: center;
+				font-style: italic;
+				z-index: 2;
+			}
+
+			button {
+				color: rgba(127,255,255,0.75);
+				background: transparent;
+				outline: 1px solid rgba(127,255,255,0.75);
+				border: 0px;
+				padding: 5px 10px;
+				cursor: pointer;
+			}
+
+			button:hover {
+				background-color: rgba(0,255,255,0.5);
+			}
+
+			button:active {
+				color: #000000;
+				background-color: rgba(0,255,255,0.75);
+			}
+
+			#signInButton {
+				outline: none !important;
+			}
+		</style>
+	</head>
+	<body>
+
+		<!-- Sign In Screen -->
+		<div id="signInScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(to bottom, #f8f9fa, #e9ecef); font-family: Arial, sans-serif;">
+			<div style="background: #f8f9fa; padding: 65px; border-radius: 4px; margin: 30px 0; border: 1px solid #dee2e6; text-align: center;">
+				<h2 style="color: black; text-align: center; font-size: 24px; font-weight: normal; margin-bottom: 10px;">Welcome Back</h2>
+				<p style="color: #282727; text-align: center; font-size: 16px; margin-bottom: 30px;">Lorem ipsum dolor sit amet, consectetur adipiscing elit</p>
+				<button id="signInButton" style="padding: 10px 24px; font-size: 14px; background-color: #4285f4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 8px;">
+					<span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background-color: white; border-radius: 2px; padding: 2px;">
+						<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+							<path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+							<path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>
+							<path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+							<path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.428 0 9.002 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
+						</svg>
+					</span>
+					Sign in with Google
+				</button>
+			</div>
+		</div>
+
+		<!-- Main App (hidden initially) -->
+		<div id="mainApp" style="display: none;">
+			<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> css3d - data table.</div>
+			<div id="container"></div>
+			<div id="menu">
+				<button id="table">TABLE</button>
+				<button id="sphere">SPHERE</button>
+				<button id="helix">HELIX</button>
+				<button id="grid">GRID</button>
+			</div>
+			
+			<!-- Color Scale Indicator -->
+			<div id="color-scale-indicator">
+				<div class="scale-label">Low</div>
+				<div class="color-scale-container">
+					<div class="color-scale-gradient"></div>
+				</div>
+				<div class="scale-label">High</div>
+			</div>
+		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+					"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+				}
+			}
+		</script>
+
+		<script type="module">
+
+			import * as THREE from 'three';
+			import TWEEN from 'three/addons/libs/tween.module.js';
+			import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+			import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+
+			// Google Configuration
+			const GOOGLE_CLIENT_ID = '397769603990-rh7th2citjj0p6aqa7867k2ell0sb1hc.apps.googleusercontent.com';
+			const GOOGLE_API_KEY = 'AIzaSyCclFS7u8UPhF5gYPN0L_xhjt_ryIC__t0';
+			const SHEET_ID = '1wjS4adcFaFodv6iEh_nKiMPQh_w-ZV9lKHCi1-tkQmQ';
+		
+
+			const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
+			const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+			let camera, scene, renderer;
+			let controls;
+			let sheetData = [];
+
+			const objects = [];
+			const targets = { table: [], sphere: [], helix: [], grid: [] };
+
+			// Initialize Google API
+			window.addEventListener('load', function() {
+				console.log('Page loaded, initializing Google API...');
+				gapi.load('client', initializeGapiClient);
+			});
+
+			async function initializeGapiClient() {
+				console.log('Initializing GAPI client...');
+				await gapi.client.init({
+					apiKey: GOOGLE_API_KEY,
+					discoveryDocs: [DISCOVERY_DOC],
+				});
+				console.log('GAPI client initialized');
+			}
+
+			// Handle Google Sign In
+			document.addEventListener('DOMContentLoaded', function() {
+				console.log('DOM loaded, setting up sign in button...');
+				const signInBtn = document.getElementById('signInButton');
+				if (signInBtn) {
+					signInBtn.addEventListener('click', function() {
+						console.log('Sign in button clicked');
+						const client = google.accounts.oauth2.initTokenClient({
+							client_id: GOOGLE_CLIENT_ID,
+							scope: SCOPES,
+							callback: async (response) => {
+								console.log('OAuth response:', response);
+								if (response.access_token) {
+									await loadSheetData();
+									document.getElementById('signInScreen').style.display = 'none';
+									document.getElementById('mainApp').style.display = 'block';
+									init();
+									animate();
+								}
+							},
+						});
+						client.requestAccessToken();
+					});
+					console.log('Sign in button listener attached');
+				} else {
+					console.error('Sign in button not found!');
+				}
+			});
+
+			async function loadSheetData() {
+				try {
+					console.log('Loading sheet data...');
+					const response = await gapi.client.sheets.spreadsheets.values.get({
+						spreadsheetId: SHEET_ID,
+						range: 'Data Template!A2:F',
+					});
+
+					const rows = response.result.values;
+					sheetData = rows.map(row => ({
+						name: row[0] || '',
+						photo: row[1] || '',
+						age: row[2] || '',
+						country: row[3] || '',
+						interest: row[4] || '',
+						netWorth: parseFloat(row[5]?.replace(/[$,]/g, '')) || 0
+					}));
+
+					console.log('Loaded', sheetData.length, 'entries');
+				} catch (error) {
+					console.error('Error loading sheet data:', error);
+					alert('Error loading data: ' + error.message);
+				}
+			}
+
+			// Function of colour based on net worth
+			function getNetWorthClasses(netWorth) {
+				let borderClass = '';
+				let fillClass = '';
+				
+				if (netWorth < 100000) {
+					borderClass = 'red-border';
+					fillClass = 'red-fill';
+				} else if (netWorth <= 200000) {
+					borderClass = 'orange-border';
+					fillClass = 'orange-fill';
+				} else {
+					borderClass = 'green-border';
+					fillClass = 'green-fill';
+				}
+				
+				return { borderClass, fillClass };
+			}
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.z = 3000;
+
+				scene = new THREE.Scene();
+
+				for ( let i = 0; i < sheetData.length; i++ ) {
+
+					const item = sheetData[i];
+					const { borderClass, fillClass } = getNetWorthClasses(item.netWorth);
+
+					// Create element container
+					const element = document.createElement( 'div' );
+					element.className = `element ${borderClass} ${fillClass}`;
+
+					// Country 
+					const countryDiv = document.createElement( 'div' );
+					countryDiv.className = 'corner-info country';
+					countryDiv.textContent = item.country || 'Unknown';
+					element.appendChild( countryDiv );
+
+					// Age
+					const ageDiv = document.createElement( 'div' );
+					ageDiv.className = 'corner-info age';
+					ageDiv.textContent = item.age ? item.age : 'Unknown';
+					element.appendChild( ageDiv );
+
+					// Photo container
+					const photoDiv = document.createElement( 'div' );
+					photoDiv.className = 'photo-container';
+					const photo = document.createElement( 'img' );
+					photo.className = 'photo';
+					photo.src = item.photo;
+					photo.alt = item.name;
+					photo.onerror = function() {
+						this.style.display = 'none';
+						photoDiv.innerHTML = '<div style="color: white; font-size: 12px; text-align: center;">No Photo</div>';
+					};
+					photoDiv.appendChild( photo );
+					element.appendChild( photoDiv );
+
+					// Name
+					const nameDiv = document.createElement( 'div' );
+					nameDiv.className = 'name';
+					nameDiv.textContent = item.name || 'Unknown';
+					element.appendChild( nameDiv );
+
+					// Interest 
+					const interestDiv = document.createElement( 'div' );
+					interestDiv.className = 'interest';
+					interestDiv.textContent = item.interest || 'Not specified';
+					element.appendChild( interestDiv );
+
+					// Create CSS3D object
+					const objectCSS = new CSS3DObject( element );
+					objectCSS.position.x = Math.random() * 4000 - 2000;
+					objectCSS.position.y = Math.random() * 4000 - 2000;
+					objectCSS.position.z = Math.random() * 4000 - 2000;
+					scene.add( objectCSS );
+
+					objects.push( objectCSS );
+
+					// Table layout
+					const tableObject = new THREE.Object3D();
+					tableObject.position.x = ( (i % 20) * 180 ) - 1710;
+					tableObject.position.y = - ( Math.floor(i / 20) % 10 * 200 ) + 900;
+					targets.table.push( tableObject );
+
+				}
+
+				// Sphere layout
+				const vector = new THREE.Vector3();
+
+				for ( let i = 0, l = objects.length; i < l; i ++ ) {
+
+					const phi = Math.acos( - 1 + ( 2 * i ) / l );
+					const theta = Math.sqrt( l * Math.PI ) * phi;
+
+					const sphereObject = new THREE.Object3D();
+
+					sphereObject.position.setFromSphericalCoords( 900, phi, theta );
+
+					vector.copy( sphereObject.position ).multiplyScalar( 2 );
+
+					sphereObject.lookAt( vector );
+
+					targets.sphere.push( sphereObject );
+
+				}
+
+				// Double Helix layout
+				for ( let i = 0, l = objects.length; i < l; i ++ ) {
+
+				const helixAngle = i * 0.2;
+				const helixRadius = 800; 
+				const isFirstHelix = i % 2 === 0;
+				const verticalSpacing = 12; 
+
+				const helixObject = new THREE.Object3D();
+
+				helixObject.position.x = helixRadius * Math.sin(helixAngle) * (isFirstHelix ? 1 : -1);
+				helixObject.position.y = - ( i * verticalSpacing ) + 1500; 
+				helixObject.position.z = helixRadius * Math.cos(helixAngle);
+
+				vector.x = helixObject.position.x * 2;
+				vector.y = helixObject.position.y;
+				vector.z = helixObject.position.z * 2;
+
+				helixObject.lookAt( vector );
+
+				targets.helix.push( helixObject );
+				}
+
+				// Grid layout (5x4x10)
+				for ( let i = 0; i < objects.length; i ++ ) {
+
+					const gridObject = new THREE.Object3D();
+
+					gridObject.position.x = ( (i % 5) * 400 ) - 800;
+					gridObject.position.y = ( - (Math.floor(i / 5) % 4) * 400 ) + 600;
+					gridObject.position.z = ( -Math.floor(i / 20) % 10 ) * 1000;
+
+					targets.grid.push( gridObject );
+
+				}
+
+				renderer = new CSS3DRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.getElementById( 'container' ).appendChild( renderer.domElement );
+
+				controls = new TrackballControls( camera, renderer.domElement );
+				controls.minDistance = 500;
+				controls.maxDistance = 6000;
+				controls.addEventListener( 'change', render );
+
+				document.getElementById( 'table' ).addEventListener( 'click', function () {
+					transform( targets.table, 2000 );
+				} );
+
+				document.getElementById( 'sphere' ).addEventListener( 'click', function () {
+					transform( targets.sphere, 2000 );
+				} );
+
+				document.getElementById( 'helix' ).addEventListener( 'click', function () {
+					transform( targets.helix, 2000 );
+				} );
+
+				document.getElementById( 'grid' ).addEventListener( 'click', function () {
+					transform( targets.grid, 2000 );
+				} );
+
+				transform( targets.table, 2000 );
+
+				window.addEventListener( 'resize', onWindowResize );
+
+			}
+
+			function transform( targets, duration ) {
+
+				TWEEN.removeAll();
+
+				for ( let i = 0; i < objects.length; i ++ ) {
+
+					const object = objects[ i ];
+					const target = targets[ i ];
+
+					new TWEEN.Tween( object.position )
+						.to( { x: target.position.x, y: target.position.y, z: target.position.z }, Math.random() * duration + duration )
+						.easing( TWEEN.Easing.Exponential.InOut )
+						.start();
+
+					new TWEEN.Tween( object.rotation )
+						.to( { x: target.rotation.x, y: target.rotation.y, z: target.rotation.z }, Math.random() * duration + duration )
+						.easing( TWEEN.Easing.Exponential.InOut )
+						.start();
+
+				}
+
+				new TWEEN.Tween( this )
+					.to( {}, duration * 2 )
+					.onUpdate( render )
+					.start();
+
+			}
+
+			function onWindowResize() {
+
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+				render();
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				TWEEN.update();
+
+				controls.update();
+
+			}
+
+			function render() {
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+	</body>
+</html>
